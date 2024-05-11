@@ -1,13 +1,13 @@
 import React,{useCallback, useEffect,useState ,useMemo,useRef}from 'react';
 import ReactFlow,{Background,applyNodeChanges,Controls,MiniMap,
-  applyEdgeChanges,addEdge} from 'reactflow';
+  applyEdgeChanges,addEdge, getBezierPath, getMarkerEnd,EdgeLabelRenderer,BaseEdge,useReactFlow,ReactFlowProvider } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Handle, Position } from 'reactflow';
 import autoprefixer from 'autoprefixer';
 import './index.css';
 import InfiniteScroll from 'react-infinite-scroll-component';
 const initialNodes = [
-  { id: 'node-1', type: 'customNode', position: { x: 0, y: 0 }, data: { value: 123 } },
+  { id: 'node-1', type: 'customNode', position: { x: 100, y: 100 }, data: { value: 123 } },
 ];
 
 const initialEdges = [
@@ -16,7 +16,7 @@ const initialEdges = [
 ];
 
  
-export default function App() {
+function Flow() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
 
@@ -27,28 +27,26 @@ export default function App() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedEdge, setSelectedEdge] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const reactFlow = useReactFlow();
 
-  const onNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes]
-  );
-  const onEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges]
-  );
-  const addNode = () => {
-    const newNodeId = `node-${nodes.length + 1}`;
-    const newNode = {
-      id: newNodeId,
-      type: 'customNode', // or any other type you want to add
-      position: { x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight },
-      data: { label: `Node ${nodes.length + 1}`,processList: processList,pageIndex: pageIndex  },
-    };
-    setNodes((nds) => [...nds, newNode]);
-  };
   useEffect(()=> {
     getAllProcessUser([],0);
   },[])
+  useEffect(() => {
+   
+      reactFlow.fitView({ padding: 0.2, includeHiddenNodes: true });
+    
+  }, [nodes, edges, reactFlow]);
+
+  useEffect(()=> {
+    setEdges((currentEdges) =>
+      currentEdges.map((edge) =>
+        {return { ...edge, data: { edge: edge} } }  
+      )
+    );
+  },[edges.length])
 
   useEffect(() => {
       setNodes((nds) =>
@@ -61,11 +59,28 @@ export default function App() {
       );
       console.log("processList",processList);
     }, [processList]);
-  useEffect(() => {
-      console.log("Updated processList:", processList);
-      // Perform any action that depends on the updated processList here
-    }, [processList]);
-    
+
+  const onConnect = useCallback((connection) => 
+        setEdges((eds) => addEdge({ ...connection, type: 'customEdge' }, eds)),
+      [setEdges]
+    );
+  const updateEdgeLabel = (edgeId, newLabel) => {
+      setEdges((currentEdges) => 
+        currentEdges.map((edge) => 
+          edge.id === edgeId ? { ...edge, label: newLabel } : edge
+        )
+      );
+    };
+    const onNodesChange = useCallback(
+      (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+      [setNodes]
+    );
+    const onEdgesChange = useCallback(
+      (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+      [setEdges]
+    );
+  
+
   const getAllProcessUser = (processList,pageIndex) => {
     const queryParams = new URLSearchParams(window.location.search);
     const authId = queryParams.get('authId');
@@ -94,10 +109,105 @@ export default function App() {
         // You can display an error message or take other actions here
       });
   };
-  const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges],
-  );
+  // const onEdgeUpdate = useCallback(
+  //   (oldEdge, newConnection) => setEdges((els) => updateEdge(oldEdge, newConnection, els)),
+  //   []
+  // );
+
+  const addNode = () => {
+    const newNodeId = `node-${nodes.length + 1}`;
+    const newNode = {
+      id: newNodeId,
+      type: 'customNode', // or any other type you want to add
+      position: { x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight },
+      data: { label: `Node ${nodes.length + 1}`,processList: processList,pageIndex: pageIndex  },
+    };
+    setNodes((nds) => [...nds, newNode]);
+    
+  };
+  const CustomEdge = ({
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+    style = {},
+    data,
+    arrowHeadType,
+    markerEndId,
+  }) => {
+    console.log("1233",edges)
+    const [edgePath, labelX, labelY] = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    });
+    const markerEnd = getMarkerEnd(arrowHeadType, markerEndId);
+
+    const onEdgeClick = (evt) => {
+      evt.stopPropagation();
+      console.log("Edge ID:", id,data);
+      setSelectedEdge(data?.edge);
+      setIsEditModalVisible(true);
+    };
+  
+    return (
+      <>
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            backgroundColor: "white",
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            fontSize: 12,
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan"
+        >
+          <button className="edgebutton" onClick={onEdgeClick}>
+           {edges.find(edge => edge.id === id)?.label || "Status"} 
+          </button>
+        </div>
+      </EdgeLabelRenderer>
+        </>
+       
+    );
+  };
+  const EdgeEditForm = () => {
+    const [newLabel, setNewLabel] = useState('Success');
+
+    const handleSubmit = (e) => {
+      console.log("selectedEdge",selectedEdge.id,newLabel)
+      updateEdgeLabel(selectedEdge.id, newLabel);
+      setIsEditModalVisible(false);
+    };
+  
+    if (!isEditModalVisible) return null;
+  
+    return (
+      <div className='border-black rounded-md' style={{ borderWidth:1, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', zIndex: 100 }}>
+        <div>
+          <label>
+           Choose Status:
+          </label>
+          <select onChange={(e)=> setNewLabel(e.target.value)}>
+              <option value="Success">Success</option>
+              <option value="Fail">Fail</option>
+            </select>
+<div className='flex justify-start'>
+<button onClick={handleSubmit} className='bg-green-400 py-2 px-2 rounded text-white mt-2 mr-2' type="submit">Update</button>
+          <button onClick={()=> setIsEditModalVisible(false)} className='bg-red-500 py-2 px-2 rounded text-white mt-2' type="submit">Close</button>
+</div>
+        </div>
+      </div>
+    );
+  };
 
   function CustomNode({ data,id,isConnectable }) {
    
@@ -142,32 +252,38 @@ export default function App() {
      
         <select onClick={handleLoadMore} className='bg-white' >
         {data?.processList?.map((process, index) => (
+          <>
           <option key={index} value={process.id}>
            {process.name.length > 10 ? process.name.substring(0, 10) + '...' : process.name}
           </option>
+           {index === data?.processList.length - 1 && <option>Load more...</option>}
+          </>
         ))}
-         <option>Load more...</option>
+        
       </select>
       </div>
     );
   }
-
+  const edgeTypes = useMemo(() => ({ customEdge: CustomEdge }), []);
   const nodeTypes = useMemo(() => ({ customNode: CustomNode }), [])
-  const onNodeClick = (event, node) => {
-    setSelectedNode({ node, position: { x: event.clientX, y: event.clientY } });
-    setDropdownPosition({ x: event.clientX, y: event.clientY });
-    setShowDropdown(true);
-  };
+ 
   return (
+  
     <div style={{ width: '100vw', height: '100vh' }}>
       <button className='bg-green-400 top-2 left-2 py-2 px-2 rounded text-white' onClick={addNode} style={{ position: 'absolute', zIndex: 1000}}>Add Node</button> 
-      <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onNodeClick={onNodeClick} nodeTypes={nodeTypes}>
+      <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView>
       <Controls />
     
       <Background/>
       </ReactFlow>
-      
+      <EdgeEditForm />
     </div>
+    
   );
 }
-
+export default function App(){
+return (  <ReactFlowProvider >
+           <Flow/>
+</ReactFlowProvider>
+)
+}

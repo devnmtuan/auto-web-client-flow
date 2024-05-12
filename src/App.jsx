@@ -3,11 +3,11 @@ import ReactFlow,{Background,applyNodeChanges,Controls,MiniMap,
   applyEdgeChanges,addEdge, getBezierPath, getMarkerEnd,EdgeLabelRenderer,BaseEdge,useReactFlow,ReactFlowProvider } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Handle, Position } from 'reactflow';
-import autoprefixer from 'autoprefixer';
+import autoprefixer, { data } from 'autoprefixer';
 import './index.css';
 import InfiniteScroll from 'react-infinite-scroll-component';
 const initialNodes = [
-  { id: 'node-1', type: 'customNode', position: { x: 100, y: 100 }, data: { value: 123 } },
+  { id: 'node-1', type: 'customNode', position: { x: 100, y: 100 }, data: { value: "origin" } },
 ];
 
 const initialEdges = [
@@ -29,15 +29,16 @@ function Flow() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEdge, setSelectedEdge] = useState(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [triggerUpdateLabel, setTriggerUpdateLabel] = useState(false);
   const reactFlow = useReactFlow();
 
   useEffect(()=> {
     getAllProcessUser([],0);
   },[])
-  useEffect(() => {
-   
-      reactFlow.fitView({ padding: 0.2, includeHiddenNodes: true });
-    
+  useEffect(() =>  {
+       if(nodes.length >1){
+        reactFlow.fitView({ padding: 0.2, includeHiddenNodes: true });
+       }
   }, [nodes, edges, reactFlow]);
 
   useEffect(()=> {
@@ -52,7 +53,7 @@ function Flow() {
       setNodes((nds) =>
         nds.map((node) => {
           if (node.type === 'customNode') {
-            return { ...node, data: { ...node.data, processList: processList ,pageIndex: pageIndex }};
+            return { ...node, data: { ...node.data, processList: processList.map(process=> {return {id: process._id,name: process.name}}),pageIndex: pageIndex }};
           }
           return node;
         })
@@ -64,12 +65,15 @@ function Flow() {
         setEdges((eds) => addEdge({ ...connection, type: 'customEdge' }, eds)),
       [setEdges]
     );
-  const updateEdgeLabel = (edgeId, newLabel) => {
-      setEdges((currentEdges) => 
-        currentEdges.map((edge) => 
-          edge.id === edgeId ? { ...edge, label: newLabel } : edge
+  const updateEdgeLabel =  async (edgeId, newLabel) => {
+    console.log("newLabel",newLabel)
+       await setEdges((currentEdges) => 
+        currentEdges.map((edge) => {
+         return edge.id === edgeId ? {...edge,data: {...edge.data,label: newLabel}} : edge
+        }
         )
       );
+      console.log("edges",edges)
     };
     const onNodesChange = useCallback(
       (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -120,7 +124,7 @@ function Flow() {
       id: newNodeId,
       type: 'customNode', // or any other type you want to add
       position: { x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight },
-      data: { label: `Node ${nodes.length + 1}`,processList: processList,pageIndex: pageIndex  },
+      data: { label: `Node ${nodes.length + 1}`,processList: processList.map(process=> {return {id: process._id,name: process.name}}),pageIndex: pageIndex  },
     };
     setNodes((nds) => [...nds, newNode]);
     
@@ -138,7 +142,7 @@ function Flow() {
     arrowHeadType,
     markerEndId,
   }) => {
-    console.log("1233",edges)
+
     const [edgePath, labelX, labelY] = getBezierPath({
       sourceX,
       sourceY,
@@ -151,7 +155,6 @@ function Flow() {
 
     const onEdgeClick = (evt) => {
       evt.stopPropagation();
-      console.log("Edge ID:", id,data);
       setSelectedEdge(data?.edge);
       setIsEditModalVisible(true);
     };
@@ -171,7 +174,7 @@ function Flow() {
           className="nodrag nopan"
         >
           <button className="edgebutton" onClick={onEdgeClick}>
-           {edges.find(edge => edge.id === id)?.label || "Status"} 
+           {data?.label || "Status"} 
           </button>
         </div>
       </EdgeLabelRenderer>
@@ -184,12 +187,11 @@ function Flow() {
 
     const handleSubmit = (e) => {
       console.log("selectedEdge",selectedEdge.id,newLabel)
-      updateEdgeLabel(selectedEdge.id, newLabel);
+      updateEdgeLabel(selectedEdge?.id, newLabel);
       setIsEditModalVisible(false);
     };
   
     if (!isEditModalVisible) return null;
-  
     return (
       <div className='border-black rounded-md' style={{ borderWidth:1, position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: 'white', padding: '20px', zIndex: 100 }}>
         <div>
@@ -250,11 +252,11 @@ function Flow() {
             </svg>
           </Handle>
      
-        <select onClick={handleLoadMore} className='bg-white' >
+        <select onClick={handleLoadMore} className='bg-white max-w-20' >
         {data?.processList?.map((process, index) => (
           <>
           <option key={index} value={process.id}>
-           {process.name.length > 10 ? process.name.substring(0, 10) + '...' : process.name}
+           {process.name}
           </option>
            {index === data?.processList.length - 1 && <option>Load more...</option>}
           </>
@@ -266,11 +268,47 @@ function Flow() {
   }
   const edgeTypes = useMemo(() => ({ customEdge: CustomEdge }), []);
   const nodeTypes = useMemo(() => ({ customNode: CustomNode }), [])
- 
+
+  const saveFlow = () => {
+    function buildTreeWithEdges(nodes, edges) {
+      const nodeMap = new Map();
+      nodes.forEach(node => {
+        const {data: {processList,pageIndex, ...restOfData}, ...restOfNode} = node;
+        const nodeWithoutProcessList = {...restOfNode, data: {...restOfData}};
+        nodeMap.set(node.id, {...nodeWithoutProcessList, children: [], edges: []});
+      });
+    
+      edges.forEach(edge => {
+        const parentNode = nodeMap.get(edge.source);
+        const childNode = nodeMap.get(edge.target);
+        if (parentNode && childNode) {
+          // Thêm nút con vào nút cha
+          parentNode.children.push(childNode);
+          // Thêm thông tin cạnh vào nút cha
+          parentNode.edges.push({id: edge.id, source: edge.source, target: edge.target, label: edge.data?.label});
+        }
+      });
+    
+      // Tìm nút gốc
+      const rootNodes = Array.from(nodeMap.values()).filter(node => 
+        !edges.find(edge => edge.target === node.id)
+      );
+    
+      return rootNodes;
+    }
+    
+    // Sử dụng hàm mới để xây dựng và lưu trữ tree với thông tin cạnh
+    const treeDataWithEdges = buildTreeWithEdges(nodes, edges);
+    console.log(JSON.stringify(treeDataWithEdges, null, 2));
+  }
   return (
   
     <div style={{ width: '100vw', height: '100vh' }}>
-      <button className='bg-green-400 top-2 left-2 py-2 px-2 rounded text-white' onClick={addNode} style={{ position: 'absolute', zIndex: 1000}}>Add Node</button> 
+      <div className='top-2 left-2' style={{ position: 'absolute', zIndex: 30}}>
+      <button className='bg-green-400 mr-2 py-2 px-3 rounded text-white' onClick={addNode} >Add Node</button> 
+      <button className='bg-green-400 py-2 px-3 rounded text-white' onClick={saveFlow} >Save Flow</button> 
+      </div>
+     
       <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView>
       <Controls />
     

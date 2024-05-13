@@ -44,7 +44,7 @@ function Flow() {
   useEffect(()=> {
     setEdges((currentEdges) =>
       currentEdges.map((edge) =>
-        {return { ...edge, data: { edge: edge} } }  
+       edge?.data?.edge == undefined ? { ...edge, data: { edge: edge} } : edge
       )
     );
   },[edges.length])
@@ -305,8 +305,8 @@ function Flow() {
   
     <div style={{ width: '100vw', height: '100vh' }}>
       <div className='top-2 left-2' style={{ position: 'absolute', zIndex: 30}}>
-      <button className='bg-green-400 mr-2 py-2 px-3 rounded text-white' onClick={addNode} >Add Node</button> 
-      <button className='bg-green-400 py-2 px-3 rounded text-white' onClick={saveFlow} >Save Flow</button> 
+      <button style={{borderWidth: 1}} className='bg-green-50 mr-2 py-2 px-3 border-green-700 rounded text-green-700' onClick={addNode} >Add Node</button> 
+      <button style={{borderWidth: 1}} className='bg-purple-50 py-2 px-3 rounded text-purple-700 border-purple-700 ' onClick={saveFlow} >Save Flow</button> 
       </div>
      
       <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView>

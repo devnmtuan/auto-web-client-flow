@@ -606,10 +606,11 @@ function ViewFlow() {
   );
 }
 export default function App(){
-  const page = window.location.pathname;
+  const queryParams = new URLSearchParams(window.location.search);
+  const page = queryParams.get('page');
 return (  <ReactFlowProvider >
-          {page == "/flow/create/"  &&  <CreateFlow/>} 
-          {page == "/flow/view/"  &&  <ViewFlow/>} 
+          {page == "create"  &&  <CreateFlow/>} 
+          {page == "view"  &&  <ViewFlow/>} 
 </ReactFlowProvider>
 )
 }

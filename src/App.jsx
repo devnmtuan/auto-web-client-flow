@@ -249,8 +249,8 @@ function CreateFlow() {
   function CustomNode({ data,id,isConnectable }) {
 
     useEffect(() => {
-      if (data?.processList?.length > 0 && data?.processIdSelected === undefined) {
-        const defaultProcessId = data?.processList[0]._id
+      if (data?.processList?.length > 0 && data?.process === undefined) {
+        const defaultProcessId = data?.processList[0]?._id
         setNodes((nds) =>
           nds.map(node => node.id === id ? {...node, data: {...node.data, process: data?.processList.find(process=> process._id == defaultProcessId)}} : node)
         );
@@ -258,7 +258,7 @@ function CreateFlow() {
     }, [data?.processList,id]);
 
     const handleChangeSelect = (e) => {
-      const selectedId = e.target.id
+      const selectedId = e.target.value
       if(e.target.value === 'Load more...'){
         getProcessUser(data?.processList,data.pageIndex);
       }else{
@@ -303,7 +303,7 @@ function CreateFlow() {
         <select onChange={handleChangeSelect} className='bg-white max-w-20' >
         {data?.processList?.map((process, index) => (
           <>
-          <option key={process._id} value={process.name}>
+          <option key={process._id} value={process._id}>
            {process.name}
           </option>
            {index === data?.processList.length - 1 && <option>Load more...</option>}

@@ -323,7 +323,7 @@ function CreateFlow() {
       const nodeMap = new Map();
       nodes.forEach(node => {
         const {data: {process, ...restOfData}, ...restOfNode} = node;
-        nodeMap.set(node.id, {...restOfNode,data: {process: process}, children: [], edges: []});
+        nodeMap.set(node.id, {...restOfNode,data: {process: process,nodeQty: nodes.length}, children: [], edges: []});
       });
     
       edges.forEach(edge => {

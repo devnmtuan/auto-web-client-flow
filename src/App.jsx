@@ -91,6 +91,7 @@ function CreateFlow() {
   const getProcessUser = (processList,pageIndex) => {
     const queryParams = new URLSearchParams(window.location.search);
     const authId = queryParams.get('authId');
+
     const options = {
       method: "POST", // Change to 'GET' if needed
       headers: {
@@ -119,13 +120,14 @@ function CreateFlow() {
   const createFlow = (treeData) => {
     const queryParams = new URLSearchParams(window.location.search);
     const authId = queryParams.get('authId');
+    const name = queryParams.get('name');
     const options = {
       method: "POST", // Change to 'GET' if needed
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ data: {
-        name: "Ok con de",
+        name: name,
         treeData: treeData,
         authId: authId,
         createdAt: Date.now(),

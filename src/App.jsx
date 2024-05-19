@@ -90,14 +90,13 @@ function CreateFlow() {
 
   const getProcessUser = (processList,pageIndex) => {
     const queryParams = new URLSearchParams(window.location.search);
-    const authId = queryParams.get('authId');
-
+    const userId = queryParams.get('userId');
     const options = {
       method: "POST", // Change to 'GET' if needed
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ data: { authId: authId, pageIndex: pageIndex } }), 
+      body: JSON.stringify({ data: { userId: userId, pageIndex: pageIndex } }), 
     };
     const PROCESS_LIST_API = `https://auto-web-server-7ko8h.ondigitalocean.app/process/list`;
     fetch(PROCESS_LIST_API, options)
@@ -119,7 +118,7 @@ function CreateFlow() {
   };
   const createFlow = (treeData) => {
     const queryParams = new URLSearchParams(window.location.search);
-    const authId = queryParams.get('authId');
+    const userId = queryParams.get('userId');
     const name = queryParams.get('name');
     const options = {
       method: "POST", // Change to 'GET' if needed
@@ -129,7 +128,7 @@ function CreateFlow() {
       body: JSON.stringify({ data: {
         name: name,
         treeData: treeData,
-        authId: authId,
+        userId: userId,
         createdAt: Date.now(),
         updatedAt: Date.now()
       }}), 

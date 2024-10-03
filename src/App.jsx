@@ -106,7 +106,7 @@ function CreateFlow() {
       .then((data) => {
         // Handle successful response
         console.log("zooo1",processList)
-        setProcessList([...processList, ...data]);
+        setProcessList([...processList, ...(data.processes)]);
         setPageIndex(pageIndex + 1);
       })
       .catch((error) => {

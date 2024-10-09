@@ -130,7 +130,7 @@ function CreateFlow() {
         treeData: treeData,
         userId: userId,
         createdAt: Date.now(),
-        updatedAt: Date.now(), createdAtDate: new Date(), updatedAtDate: new Date()
+        updatedAt: Date.now(), createdAtDate: new Date().toLocaleString('vi-VN'), updatedAtDate: new Date().toLocaleString('vi-VN')
       }}), 
     };
     const CREATE_FLOW_API = `https://auto-web-server-mb8an.ondigitalocean.app/flow/create`;

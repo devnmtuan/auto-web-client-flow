@@ -98,7 +98,7 @@ function CreateFlow() {
       },
       body: JSON.stringify({ data: { userId: userId, pageIndex: pageIndex } }), 
     };
-    const PROCESS_LIST_API = `https://auto-web-server-mb8an.ondigitalocean.app/process/list`;
+    const PROCESS_LIST_API = `https://webbot.one/process/list`;
     fetch(PROCESS_LIST_API, options)
       .then((response) => {
         return response.json();
@@ -133,7 +133,7 @@ function CreateFlow() {
         updatedAt: Date.now(), createdAtDate: new Date().toLocaleString('en-US'), updatedAtDate: new Date().toLocaleString('en-US')
       }}), 
     };
-    const CREATE_FLOW_API = `https://auto-web-server-mb8an.ondigitalocean.app/flow/create`;
+    const CREATE_FLOW_API = `https://webbot.one/flow/create`;
     fetch(CREATE_FLOW_API, options)
       .then((response) => {
         return response.json();
@@ -464,7 +464,7 @@ function ViewFlow() {
       },
       body: JSON.stringify({ data: { id: id } }), 
     };
-    const PROCESS_LIST_API = `https://auto-web-server-mb8an.ondigitalocean.app/flow/id`;
+    const PROCESS_LIST_API = `https://webbot.one/flow/id`;
     fetch(PROCESS_LIST_API, options)
       .then((response) => {
         return response.json();
